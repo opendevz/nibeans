@@ -11,6 +11,8 @@
     <name>Yet Another DTO Generator</name>
 
     <modules>
+        <module>yadgen-api</module>
+        <module>yadgen-processor</module>
     </modules>
 
     <build>
