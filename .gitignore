@@ -1,0 +1,35 @@
+# Eclipse  #
+###################
+
+.classpath
+.project
+.settings/
+target/
+bin/
+test-output/
+
+# Idea #
+##################
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.sh
+
+# OS generated files #
+######################
+.DS_Store
+ehthumbs.db
+Icon?
+Thumbs.db
+*/overlays
+*~
