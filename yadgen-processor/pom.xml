@@ -15,4 +15,12 @@
 
     <name>Yet Another DTO Generator :: Processor</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.yadgen</groupId>
+            <artifactId>yadgen-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
 </project>
