@@ -10,31 +10,33 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>yadgen-processor</artifactId>
+    <artifactId>yadgen-example</artifactId>
     <packaging>jar</packaging>
 
-    <name>Yet Another DTO Generator :: Processor</name>
+    <name>Yet Another DTO Generator :: Example</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.yadgen</groupId>
-            <artifactId>yadgen-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.spullara.mustache.java</groupId>
-            <artifactId>compiler</artifactId>
-            <version>0.9.0</version>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.yadgen</groupId>
+            <artifactId>yadgen-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.yadgen</groupId>
+            <artifactId>yadgen-processor</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -44,7 +46,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <compilerArgument>-proc:none</compilerArgument>
+                    <compilerArgs>
+                        <arg>-Asrcpackages=org.yadgen.example</arg>
+                        <arg>-Atgtclass=org.yadgen.example.dgen.BeanImpls</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

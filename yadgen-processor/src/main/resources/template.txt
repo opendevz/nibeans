@@ -1,0 +1,103 @@
+package {{pkgName}};
+
+public class {{containerClassName}} {
+
+{{#classes}}
+
+    public static class {{clsName}}
+        {{#baseClass}}
+        extends {{baseClass}}
+        {{/baseClass}}
+        implements {{intfName}} {
+
+        {{#properties}}
+        private {{propType}} {{fieldName}};
+        {{/properties}}
+
+        {{#properties}}
+        @Override
+        public {{propType}} {{getter.simpleName}}() {
+            return this.{{fieldName}};
+        }
+        @Override
+        public void {{setter.simpleName}}({{propType}} v) {
+            this.{{fieldName}} = v;
+        }
+        {{#chainSetter}}
+        @Override
+        public {{clsName}} {{simpleName}}({{propType}} v) {
+            this.{{setter.simpleName}}(v);
+            return this;
+        }
+        {{/chainSetter}}
+
+        {{/properties}}
+        @Override
+        public boolean equals(Object p) {
+            if (!(p instanceof {{intfName}})) {
+                return false;
+            }
+            final {{intfName}} other = ({{intfName}})p;
+            {{#properties}}
+            // property {{name}}
+            {{propType}} {{name}}_other = other.{{getter.simpleName}}();
+            {{#primitive}}
+            if (this.{{fieldName}} != {{name}}_other) {
+                return false;
+            }
+            {{/primitive}}
+            {{^primitive}}
+            {{#array}}
+            if (!java.util.Arrays.equals(this.{{fieldName}}, {{name}}_other)) {
+                return false;
+            }
+            {{/array}}
+            {{^array}}
+            if (!{{pkgName}}.{{containerClassName}}.compareObjects(this.{{fieldName}}, {{name}}_other)) {
+                return false;
+            }
+            {{/array}}
+            {{/primitive}}
+            {{/properties}}
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Arrays.hashCode(new Object[]{null
+        {{#properties}}
+                ,this.{{fieldName}}
+        {{/properties}}
+            });
+        }
+
+        public static class Provider implements org.yadgen.internal.BeanProvider<{{intfName}}> {
+            @Override
+            public Class<{{intfName}}> getBeanInterface() {
+                return {{intfName}}.class;
+            }
+            @Override
+            public {{intfName}} createInstance() {
+                return new {{clsName}}();
+            }
+        }
+    }
+{{/classes}}
+
+    public static class ProviderService implements org.yadgen.internal.BeanProviderService {
+        @Override
+        public void registerProviders(org.yadgen.internal.BeanProviderRegistry registry) {            
+            {{#classes}}
+            registry.register({{intfName}}.class, new {{clsName}}.Provider());
+            {{/classes}}
+        }
+    }
+
+    private static boolean compareObjects(Object a, Object b) {
+        if (a == null) {
+            return b == null;
+        }
+        return b != null && a.equals(b);
+    }
+
+}
