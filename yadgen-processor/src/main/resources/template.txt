@@ -53,7 +53,7 @@ public class {{containerClassName}} {
             }
             {{/array}}
             {{^array}}
-            if (!{{pkgName}}.{{containerClassName}}.compareObjects(this.{{fieldName}}, {{name}}_other)) {
+            if (!{{pkgName}}.{{containerClassName}}.equalsNullSafe(this.{{fieldName}}, {{name}}_other)) {
                 return false;
             }
             {{/array}}
@@ -93,11 +93,8 @@ public class {{containerClassName}} {
         }
     }
 
-    private static boolean compareObjects(Object a, Object b) {
-        if (a == null) {
-            return b == null;
-        }
-        return b != null && a.equals(b);
+    private static boolean equalsNullSafe(Object a, Object b) {
+        return (a == null) ? (b == null) : (b != null && a.equals(b));
     }
 
 }
