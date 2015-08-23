@@ -29,6 +29,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
@@ -145,10 +146,10 @@ public class YadgenProcessor extends AbstractProcessor {
 	 * Process a single bean interface.
 	 */
 	private ImplClassInfo processInterafce(TypeElement intfElement) throws IOException {
-		Map<String, Property> properties = new LinkedHashMap<>();
-		int fullProperties = 0;
 		final Types typeUtils = processingEnv.getTypeUtils();
 		DeclaredType intfType = typeUtils.getDeclaredType(intfElement);
+		// Working descriptor
+		ImplClassInfo info = new ImplClassInfo(intfElement);
 		// Inspect the elements
 		for (Element enclosedElement : intfElement.getEnclosedElements()) {
 			if (enclosedElement.getKind() != ElementKind.METHOD) {
@@ -159,24 +160,18 @@ public class YadgenProcessor extends AbstractProcessor {
 			// Check the name
 			String propName = null;
 			if ((propName = getPropetyName(name, "get")) != null) {
-				// Getters should have no arguments
-				if (!methodElement.getParameters().isEmpty()) {
+				if (!processGetter(propName, methodElement, info)) {
 					return null;
 				}
-				// Match return type
+			} else if ((propName = getPropetyName(name, "is")) != null) {
+				// isSomething() must be a boolean getter
 				TypeMirror propType = methodElement.getReturnType();
-				Property property = properties.get(propName);
-				if (property == null) {
-					property = new Property();
-					property.name = propName;
-					property.propType = propType;
-					properties.put(propName, property);
-				} else if (property.getter == null && typeUtils.isSameType(property.propType, propType)) {
-					++fullProperties;
-				} else {
+				PrimitiveType boolType = typeUtils.getPrimitiveType(TypeKind.BOOLEAN);
+				if (!(typeUtils.isSameType(boolType, propType)
+						|| typeUtils.isSameType(boolType, typeUtils.unboxedType(propType)))
+						|| !processGetter(propName, methodElement, info)) {
 					return null;
 				}
-				property.getter = methodElement;
 			} else if ((propName = getPropetyName(name, "set")) != null) {
 				// Setters should have no return values and a single argument
 				if (methodElement.getReturnType().getKind() != TypeKind.VOID
@@ -185,18 +180,16 @@ public class YadgenProcessor extends AbstractProcessor {
 				}
 				// Setters should have a single argument with correct property type
 				TypeMirror propType = methodElement.getParameters().get(0).asType();
-				Property property = properties.get(propName);
+				Property property = info.properties.get(propName);
 				if (property == null) {
-					property = new Property();
-					property.name = propName;
-					property.propType = propType;
-					properties.put(propName, property);
-				} else if (property.setter == null && typeUtils.isSameType(property.propType, propType)) {
-					++fullProperties;
+					property = addProperty(propName, propType, info);
+				} else if (property.setter == null && isSameType(property.fieldType, propType)) {
+					++info.fullProperties;
 				} else {
 					return null;
 				}
 				property.setter = methodElement;
+				property.setterType = propType;
 			} else if ((propName = getPropetyName(name, "with")) != null) {
 				// Chain setter should have a single argument and the parent class as return type
 				if (methodElement.getParameters().size() != 1
@@ -205,30 +198,76 @@ public class YadgenProcessor extends AbstractProcessor {
 				}
 				// Setters should have a single argument with correct property type
 				TypeMirror propType = methodElement.getParameters().get(0).asType();
-				Property property = properties.get(propName);
+				Property property = info.properties.get(propName);
 				if (property == null) {
-					property = new Property();
-					property.name = propName;
-					property.propType = propType;
-					properties.put(propName, property);
-				} else if (property.chainSetter != null || !typeUtils.isSameType(property.propType, propType)) {
+					property = addProperty(propName, propType, info);
+				} else if (property.chainSetter != null || !isSameType(property.fieldType, propType)) {
 					return null;
 				}
 				property.chainSetter = methodElement;
+				property.chainSetterType = propType;
 			} else {
 				return null;
 			}
 		}
 		// If there are any partial properties, fail
-		if (fullProperties != properties.size()) {
+		if (info.fullProperties < info.properties.size()) {
 			return null;
 		}
 		// Result
-		ImplClassInfo info = new ImplClassInfo();
-		info.intfName = intfElement.getQualifiedName().toString();
-		info.clsName = intfElement.getSimpleName() + "_impl";
-		info.properties = properties.values();
 		return info;
+	}
+
+	private boolean processGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
+		// Getters should have no arguments
+		if (!methodElement.getParameters().isEmpty()) {
+			return false;
+		}
+		// Match return type
+		TypeMirror propType = methodElement.getReturnType();
+		Property property = info.properties.get(propName);
+		if (property == null) {
+			property = addProperty(propName, propType, info);
+		} else if (property.getter == null && processingEnv.getTypeUtils().isSameType(property.fieldType, propType)) {
+			++info.fullProperties;
+		} else {
+			return false;
+		}
+		property.getter = methodElement;
+		return true;
+	}
+
+	private boolean isSameType(TypeMirror t1, TypeMirror t2) {
+		final Types typeUtils = processingEnv.getTypeUtils();
+		if (typeUtils.isSameType(t1, t2)) {
+			return true;
+		}
+		final PrimitiveType pt1 = getPrimitiveType(t1);
+		if (pt1 == null) {
+			return false;
+		}
+		final PrimitiveType pt2 = getPrimitiveType(t2);
+		return pt1.equals(pt2);
+	}
+
+	private PrimitiveType getPrimitiveType(TypeMirror t) {
+		if (t.getKind().isPrimitive()) {
+			return (PrimitiveType) t;
+		}
+		try {
+			return processingEnv.getTypeUtils().unboxedType(t);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+	}
+
+	private Property addProperty(String propName, TypeMirror propType, ImplClassInfo info) {
+		Property property;
+		property = new Property();
+		property.name = propName;
+		property.fieldType = propType;
+		info.properties.put(propName, property);
+		return property;
 	}
 
 	/**
@@ -281,17 +320,26 @@ public class YadgenProcessor extends AbstractProcessor {
 	}
 
 	public static class ImplClassInfo {
-		public String intfName;
-		public String clsName;
-		public Collection<Property> properties;
+		public final String intfName;
+		public final String clsName;
+		public Map<String, Property> properties = new LinkedHashMap<>();
+		public final Collection<Property> propertyDefs = properties.values();
+		public int fullProperties = 0;
+
+		ImplClassInfo(TypeElement intfElement) {
+			intfName = intfElement.getQualifiedName().toString();
+			clsName = intfElement.getSimpleName() + "_impl";
+		}
 	}
 
 	public static class Property {
 		public String name;
 		public ExecutableElement getter;
 		public ExecutableElement setter;
+		public TypeMirror setterType;
 		public ExecutableElement chainSetter;
-		public TypeMirror propType;
+		public TypeMirror chainSetterType;
+		public TypeMirror fieldType;
 
 		public String getFieldName() {
 			return "val_" + name;

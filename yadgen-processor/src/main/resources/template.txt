@@ -10,37 +10,37 @@ public class {{containerClassName}} {
         {{/baseClass}}
         implements {{intfName}} {
 
-        {{#properties}}
-        private {{propType}} {{fieldName}};
-        {{/properties}}
+        {{#propertyDefs}}
+        private {{fieldType}} {{fieldName}};
+        {{/propertyDefs}}
 
-        {{#properties}}
+        {{#propertyDefs}}
         @Override
-        public {{propType}} {{getter.simpleName}}() {
+        public {{getter.returnType}} {{getter.simpleName}}() {
             return this.{{fieldName}};
         }
         @Override
-        public void {{setter.simpleName}}({{propType}} v) {
+        public void {{setter.simpleName}}({{setterType}} v) {
             this.{{fieldName}} = v;
         }
         {{#chainSetter}}
         @Override
-        public {{clsName}} {{simpleName}}({{propType}} v) {
+        public {{clsName}} {{simpleName}}({{chainSetterType}} v) {
             this.{{setter.simpleName}}(v);
             return this;
         }
         {{/chainSetter}}
 
-        {{/properties}}
+        {{/propertyDefs}}
         @Override
         public boolean equals(Object p) {
             if (!(p instanceof {{intfName}})) {
                 return false;
             }
             final {{intfName}} other = ({{intfName}})p;
-            {{#properties}}
+            {{#propertyDefs}}
             // property {{name}}
-            {{propType}} {{name}}_other = other.{{getter.simpleName}}();
+            {{fieldType}} {{name}}_other = other.{{getter.simpleName}}();
             {{#primitive}}
             if (this.{{fieldName}} != {{name}}_other) {
                 return false;
@@ -58,16 +58,16 @@ public class {{containerClassName}} {
             }
             {{/array}}
             {{/primitive}}
-            {{/properties}}
+            {{/propertyDefs}}
             return true;
         }
 
         @Override
         public int hashCode() {
             return java.util.Arrays.hashCode(new Object[]{null
-        {{#properties}}
+        {{#propertyDefs}}
                 ,this.{{fieldName}}
-        {{/properties}}
+        {{/propertyDefs}}
             });
         }
 

@@ -11,4 +11,8 @@ public interface Car {
 
 	Car withMake(String v);
 
+	Boolean isAutomatic();
+
+	void setAutomatic(boolean v);
+
 }

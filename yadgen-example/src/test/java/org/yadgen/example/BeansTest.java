@@ -43,6 +43,13 @@ public class BeansTest {
 		}));
 	}
 
+	@Test
+	public void testBooleanProperties() {
+		Car car = BeanFactory.createBean(Car.class);
+		car.setAutomatic(true);
+		assertTrue(car.isAutomatic());
+	}
+
 	private static Person createPersonBean() {
 		Person person = BeanFactory.createBean(Person.class);
 		person.setName(NAME);
