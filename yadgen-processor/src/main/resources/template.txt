@@ -92,7 +92,7 @@ public class {{containerClassName}} {
         @Override
         public void registerProviders(org.yadgen.internal.BeanProviderRegistry registry) {            
             {{#classes}}
-            registry.register({{intfName}}.class, new {{clsName}}.Provider());
+            registry.register(new {{clsName}}.Provider());
             {{/classes}}
         }
     }

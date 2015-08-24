@@ -42,7 +42,7 @@ public final class BeanFactory {
 	static {
 		BeanProviderRegistry registry = new BeanProviderRegistry() {
 			@Override
-			public <T> void register(Class<T> ibean, BeanProvider<T> provider) {
+			public <T> void register(BeanProvider<T> provider) {
 				Class<?> beanInterface = provider.getBeanInterface();
 				if (beanInterface != null) {
 					BeanProvider<?> existingProvider = providers.get(beanInterface);
