@@ -4,6 +4,7 @@ public class {{containerClassName}} {
 
 {{#classes}}
 
+    /** Bean implementation for interface {@link {{intfName}}} */
     public static class {{clsName}}
         {{#baseClass}}
         extends {{baseClass}}
@@ -15,15 +16,18 @@ public class {{containerClassName}} {
         {{/propertyDefs}}
 
         {{#propertyDefs}}
+        /** {@inheritDoc} */
         @Override
         public {{getter.returnType}} {{getter.simpleName}}() {
             return this.{{fieldName}};
         }
+        /** {@inheritDoc} */
         @Override
         public void {{setter.simpleName}}({{setterType}} v) {
             this.{{fieldName}} = v;
         }
         {{#chainSetter}}
+        /** {@inheritDoc} */
         @Override
         public {{clsName}} {{simpleName}}({{chainSetterType}} v) {
             this.{{setter.simpleName}}(v);
