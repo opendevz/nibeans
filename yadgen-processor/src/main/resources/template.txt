@@ -4,12 +4,12 @@ public class {{containerClassName}} {
 
 {{#classes}}
 
-    /** Bean implementation for interface {@link {{intfName}}} */
+    /** Bean implementation for interface {@link {{intfElement.qualifiedName}}} */
     public static class {{clsName}}
         {{#baseClass}}
         extends {{baseClass}}
         {{/baseClass}}
-        implements {{intfName}} {
+        implements {{intfElement.qualifiedName}} {
 
         {{#propertyDefs}}
         private {{fieldType}} {{fieldName}};
@@ -38,10 +38,10 @@ public class {{containerClassName}} {
         {{/propertyDefs}}
         @Override
         public boolean equals(Object p) {
-            if (!(p instanceof {{intfName}})) {
+            if (!(p instanceof {{intfElement.qualifiedName}})) {
                 return false;
             }
-            final {{intfName}} other = ({{intfName}})p;
+            final {{intfElement.qualifiedName}} other = ({{intfElement.qualifiedName}})p;
             {{#propertyDefs}}
             // property {{name}}
             {{fieldType}} {{name}}_other = other.{{getter.simpleName}}();
@@ -75,13 +75,13 @@ public class {{containerClassName}} {
             });
         }
 
-        public static class Provider implements org.yadgen.internal.BeanProvider<{{intfName}}> {
+        public static class Provider implements org.yadgen.internal.BeanProvider<{{intfElement.qualifiedName}}> {
             @Override
-            public Class<{{intfName}}> getBeanInterface() {
-                return {{intfName}}.class;
+            public Class<{{intfElement.qualifiedName}}> getBeanInterface() {
+                return {{intfElement.qualifiedName}}.class;
             }
             @Override
-            public {{intfName}} createInstance() {
+            public {{intfElement.qualifiedName}} createInstance() {
                 return new {{clsName}}();
             }
         }

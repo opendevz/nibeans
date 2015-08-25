@@ -48,6 +48,8 @@ public class BeansTest {
 		Car car = BeanFactory.createBean(Car.class);
 		car.setAutomatic(true);
 		assertTrue(car.isAutomatic());
+		// This makes sure Boolean is kept in the setter
+		car.setAutomatic(null);
 	}
 
 	private static Person createPersonBean() {

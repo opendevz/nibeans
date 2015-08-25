@@ -147,7 +147,6 @@ public class YadgenProcessor extends AbstractProcessor {
 	 */
 	private ImplClassInfo processInterafce(TypeElement intfElement) throws IOException {
 		final Types typeUtils = processingEnv.getTypeUtils();
-		DeclaredType intfType = typeUtils.getDeclaredType(intfElement);
 		// Working descriptor
 		ImplClassInfo info = new ImplClassInfo(intfElement);
 		// Inspect the elements
@@ -173,39 +172,13 @@ public class YadgenProcessor extends AbstractProcessor {
 					return null;
 				}
 			} else if ((propName = getPropetyName(name, "set")) != null) {
-				// Setters should have no return values and a single argument
-				if (methodElement.getReturnType().getKind() != TypeKind.VOID
-						|| methodElement.getParameters().size() != 1) {
+				if (!processSetter(propName, methodElement, info)) {
 					return null;
 				}
-				// Setters should have a single argument with correct property type
-				TypeMirror propType = methodElement.getParameters().get(0).asType();
-				Property property = info.properties.get(propName);
-				if (property == null) {
-					property = addProperty(propName, propType, info);
-				} else if (property.setter == null && isSameType(property.fieldType, propType)) {
-					++info.fullProperties;
-				} else {
-					return null;
-				}
-				property.setter = methodElement;
-				property.setterType = propType;
 			} else if ((propName = getPropetyName(name, "with")) != null) {
-				// Chain setter should have a single argument and the parent class as return type
-				if (methodElement.getParameters().size() != 1
-						|| !typeUtils.isSameType(methodElement.getReturnType(), intfType)) {
+				if (!processChainSetter(propName, methodElement, info)) {
 					return null;
 				}
-				// Setters should have a single argument with correct property type
-				TypeMirror propType = methodElement.getParameters().get(0).asType();
-				Property property = info.properties.get(propName);
-				if (property == null) {
-					property = addProperty(propName, propType, info);
-				} else if (property.chainSetter != null || !isSameType(property.fieldType, propType)) {
-					return null;
-				}
-				property.chainSetter = methodElement;
-				property.chainSetterType = propType;
 			} else {
 				return null;
 			}
@@ -228,6 +201,8 @@ public class YadgenProcessor extends AbstractProcessor {
 		Property property = info.properties.get(propName);
 		if (property == null) {
 			property = addProperty(propName, propType, info);
+		} else if (property.getter != null) {
+			return false;
 		} else if (property.getter == null && processingEnv.getTypeUtils().isSameType(property.fieldType, propType)) {
 			++info.fullProperties;
 		} else {
@@ -235,6 +210,58 @@ public class YadgenProcessor extends AbstractProcessor {
 		}
 		property.getter = methodElement;
 		return true;
+	}
+
+	private boolean processSetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
+		// Setters should have no return values and a single argument
+		if (methodElement.getReturnType().getKind() != TypeKind.VOID || methodElement.getParameters().size() != 1) {
+			return false;
+		}
+		// Setters should have a single argument with correct property type
+		TypeMirror setterType = methodElement.getParameters().get(0).asType();
+		Property property = info.properties.get(propName);
+		if (property == null) {
+			property = addProperty(propName, setterType, info);
+		} else if (property.setter == null && isSameType(property.fieldType, setterType)) {
+			++info.fullProperties;
+			boxFieldTypeIfNecessary(setterType, property);
+		} else {
+			return false;
+		}
+		property.setter = methodElement;
+		property.setterType = setterType;
+		return true;
+	}
+
+	private boolean processChainSetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
+		Types typeUtils = processingEnv.getTypeUtils();
+		DeclaredType intfType = typeUtils.getDeclaredType(info.intfElement);
+		// Chain setter should have a single argument and the parent class as return type
+		if (methodElement.getParameters().size() != 1
+				|| !typeUtils.isSameType(methodElement.getReturnType(), intfType)) {
+			return false;
+		}
+		// Setters should have a single argument with correct property type
+		TypeMirror chainSetterType = methodElement.getParameters().get(0).asType();
+		Property property = info.properties.get(propName);
+		if (property == null) {
+			property = addProperty(propName, chainSetterType, info);
+		} else if (property.chainSetter != null || !isSameType(property.fieldType, chainSetterType)) {
+			return false;
+		}
+		boxFieldTypeIfNecessary(chainSetterType, property);
+		property.chainSetter = methodElement;
+		property.chainSetterType = chainSetterType;
+		return true;
+	}
+
+	/**
+	 * Box the field type if it is primitive and the setter might give it a boxed value
+	 */
+	private void boxFieldTypeIfNecessary(TypeMirror setterType, Property property) {
+		if (property.fieldType.getKind().isPrimitive() && !setterType.getKind().isPrimitive()) {
+			property.fieldType = setterType;
+		}
 	}
 
 	private boolean isSameType(TypeMirror t1, TypeMirror t2) {
@@ -320,14 +347,14 @@ public class YadgenProcessor extends AbstractProcessor {
 	}
 
 	public static class ImplClassInfo {
-		public final String intfName;
+		public final TypeElement intfElement;
 		public final String clsName;
 		public Map<String, Property> properties = new LinkedHashMap<>();
 		public final Collection<Property> propertyDefs = properties.values();
 		public int fullProperties = 0;
 
 		ImplClassInfo(TypeElement intfElement) {
-			intfName = intfElement.getQualifiedName().toString();
+			this.intfElement = intfElement;
 			clsName = intfElement.getSimpleName() + "_impl";
 		}
 	}
