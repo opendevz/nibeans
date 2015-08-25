@@ -1,5 +1,8 @@
 package org.yadgen;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 /**
  * Defines a simple bean interface for which a default implementation can be generated.
  * <p/>
@@ -26,5 +29,6 @@ package org.yadgen;
  * @author Tareq Sharafy (tareq.sharafy@sap.com)
  *
  */
+@Retention(RetentionPolicy.RUNTIME)
 public @interface IBean {
 }
