@@ -1,1 +1,1 @@
-yadgen - Yet Another DTO Generator
+nibeans - No Implementation Beans

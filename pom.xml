@@ -3,17 +3,17 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.yadgen</groupId>
-    <artifactId>yadgen-parent</artifactId>
+    <groupId>org.nibeans</groupId>
+    <artifactId>nibeans-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Yet Another DTO Generator</name>
+    <name>No Implementation Beans</name>
 
     <modules>
-        <module>yadgen-api</module>
-        <module>yadgen-processor</module>
-        <module>yadgen-example</module>
+        <module>nibeans-api</module>
+        <module>nibeans-processor</module>
+        <module>nibeans-example</module>
     </modules>
 
     <properties>

@@ -1,0 +1,104 @@
+package {{pkgName}};
+
+public class {{containerClassName}} {
+
+{{#classes}}
+
+    /** Bean implementation for interface {@link {{intfElement.qualifiedName}}} */
+    public static class {{clsName}}
+        {{#baseClass}}
+        extends {{baseClass}}
+        {{/baseClass}}
+        implements {{intfElement.qualifiedName}} {
+
+        {{#propertyDefs}}
+        private {{fieldType}} {{fieldName}};
+        {{/propertyDefs}}
+
+        {{#propertyDefs}}
+        /** {@inheritDoc} */
+        @Override
+        public {{getter.returnType}} {{getter.simpleName}}() {
+            return this.{{fieldName}};
+        }
+        /** {@inheritDoc} */
+        @Override
+        public void {{setter.simpleName}}({{setterType}} v) {
+            this.{{fieldName}} = v;
+        }
+        {{#chainSetter}}
+        /** {@inheritDoc} */
+        @Override
+        public {{clsName}} {{simpleName}}({{chainSetterType}} v) {
+            this.{{setter.simpleName}}(v);
+            return this;
+        }
+        {{/chainSetter}}
+
+        {{/propertyDefs}}
+        @Override
+        public boolean equals(Object p) {
+            if (!(p instanceof {{intfElement.qualifiedName}})) {
+                return false;
+            }
+            final {{intfElement.qualifiedName}} other = ({{intfElement.qualifiedName}})p;
+            {{#propertyDefs}}
+            // property {{name}}
+            {{fieldType}} {{name}}_other = other.{{getter.simpleName}}();
+            {{#primitive}}
+            if (this.{{fieldName}} != {{name}}_other) {
+                return false;
+            }
+            {{/primitive}}
+            {{^primitive}}
+            {{#array}}
+            if (!java.util.Arrays.equals(this.{{fieldName}}, {{name}}_other)) {
+                return false;
+            }
+            {{/array}}
+            {{^array}}
+            if (!{{pkgName}}.{{containerClassName}}.equalsNullSafe(this.{{fieldName}}, {{name}}_other)) {
+                return false;
+            }
+            {{/array}}
+            {{/primitive}}
+            {{/propertyDefs}}
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Arrays.hashCode(new Object[]{null
+        {{#propertyDefs}}
+                ,this.{{fieldName}}
+        {{/propertyDefs}}
+            });
+        }
+
+        public static class Provider implements org.nibeans.internal.BeanProvider<{{intfElement.qualifiedName}}> {
+            @Override
+            public Class<{{intfElement.qualifiedName}}> getBeanInterface() {
+                return {{intfElement.qualifiedName}}.class;
+            }
+            @Override
+            public {{intfElement.qualifiedName}} createInstance() {
+                return new {{clsName}}();
+            }
+        }
+    }
+{{/classes}}
+
+    public static class ProviderService implements org.nibeans.internal.BeanProviderService {
+        @Override
+        public void registerProviders(org.nibeans.internal.BeanProviderRegistry registry) {            
+            {{#classes}}
+            registry.register(new {{clsName}}.Provider());
+            {{/classes}}
+        }
+    }
+
+    private static boolean equalsNullSafe(Object a, Object b) {
+        return (a == null) ? (b == null) : (b != null && a.equals(b));
+    }
+
+}
