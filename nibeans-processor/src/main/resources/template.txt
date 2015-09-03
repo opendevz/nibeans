@@ -6,9 +6,9 @@ public class {{containerClassName}} {
 
     /** Bean implementation for interface {@link {{intfElement.qualifiedName}}} */
     public static class {{clsName}}
-        {{#baseClass}}
-        extends {{baseClass}}
-        {{/baseClass}}
+        {{#baseImpl}}
+        extends {{baseImpl.clsName}}
+        {{/baseImpl}}
         implements {{intfElement.qualifiedName}} {
 
         {{#propertyDefs}}
@@ -38,7 +38,7 @@ public class {{containerClassName}} {
         {{/propertyDefs}}
         @Override
         public boolean equals(Object p) {
-            if (!(p instanceof {{intfElement.qualifiedName}})) {
+            if (!(p instanceof {{intfElement.qualifiedName}}){{#baseImpl}} || !super.equals(p){{/baseImpl}}) {
                 return false;
             }
             final {{intfElement.qualifiedName}} other = ({{intfElement.qualifiedName}})p;
@@ -68,7 +68,7 @@ public class {{containerClassName}} {
 
         @Override
         public int hashCode() {
-            return java.util.Arrays.hashCode(new Object[]{null
+            return java.util.Arrays.hashCode(new Object[]{ {{#baseImpl}}super.hashCode(){{/baseImpl}}{{^baseImpl}}null{{/baseImpl}}
         {{#propertyDefs}}
                 ,this.{{fieldName}}
         {{/propertyDefs}}

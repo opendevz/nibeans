@@ -10,12 +10,13 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,7 +68,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private String targetPackage;
 	private String targetClass;
 	private Mustache template;
-	private final List<ImplClassInfo> generatedClasses = new ArrayList<>();
+	private final Map<TypeElement, ImplClassInfo> processedInterfaces = new HashMap<>();
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -131,7 +132,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 				// Process this interface
 				ImplClassInfo clsInfo = processInterafce(intfElement);
 				if (clsInfo != null) {
-					generatedClasses.add(clsInfo);
+					processedInterfaces.put(intfElement, clsInfo);
 					claimed = true;
 				}
 			}
@@ -147,8 +148,24 @@ public class NIBeansProcessor extends AbstractProcessor {
 	 */
 	private ImplClassInfo processInterafce(TypeElement intfElement) throws IOException {
 		final Types typeUtils = processingEnv.getTypeUtils();
+		// Only a singly base interface is supported, it should also be an IBean interface
+		if (intfElement.getInterfaces().size() > 1) {
+			return null;
+		}
+		TypeElement baseInterface = null;
+		if (intfElement.getInterfaces().size() == 1) {
+			TypeMirror baseInterfaceType = intfElement.getInterfaces().get(0);
+			if (baseInterfaceType.getKind() != TypeKind.DECLARED) {
+				return null;
+			}
+			Element baseInterfaceElm = ((DeclaredType) baseInterfaceType).asElement();
+			if (baseInterfaceElm.getKind() != ElementKind.INTERFACE) {
+				return null;
+			}
+			baseInterface = (TypeElement) baseInterfaceElm;
+		}
 		// Working descriptor
-		ImplClassInfo info = new ImplClassInfo(intfElement);
+		ImplClassInfo info = new ImplClassInfo(intfElement, baseInterface);
 		// Inspect the elements
 		for (Element enclosedElement : intfElement.getEnclosedElements()) {
 			if (enclosedElement.getKind() != ElementKind.METHOD) {
@@ -301,14 +318,30 @@ public class NIBeansProcessor extends AbstractProcessor {
 	 * Generate the results of this processing run.
 	 */
 	private boolean generateResults() throws IOException {
-		if (generatedClasses.isEmpty()) {
+		if (processedInterfaces.isEmpty()) {
 			return false;
 		}
+		// Link base class implementations
+		List<ImplClassInfo> validImpls = new ArrayList<>(processedInterfaces.size());
+		for (ImplClassInfo implClassInfo : processedInterfaces.values()) {
+			if (validateImplClassInfo(implClassInfo)) {
+				validImpls.add(implClassInfo);
+			}
+		}
+		// Sort to keep the output consistent
+		Collections.sort(validImpls, new Comparator<ImplClassInfo>() {
+			@Override
+			public int compare(ImplClassInfo o1, ImplClassInfo o2) {
+				String qn1 = o1.intfElement.getQualifiedName().toString();
+				String qn2 = o2.intfElement.getQualifiedName().toString();
+				return qn1.compareTo(qn2);
+			}
+		});
 		// Generate the container class
 		Map<String, Object> params = new HashMap<>();
 		params.put("pkgName", targetPackage);
 		params.put("containerClassName", targetClass);
-		params.put("classes", generatedClasses);
+		params.put("classes", validImpls);
 		// Write the target class file
 		JavaFileObject targetClassObj = processingEnv.getFiler().createSourceFile(targetPackage + "." + targetClass);
 		try (OutputStream output = targetClassObj.openOutputStream()) {
@@ -326,6 +359,24 @@ public class NIBeansProcessor extends AbstractProcessor {
 			ps.flush();
 		}
 		return false;
+	}
+
+	private boolean validateImplClassInfo(ImplClassInfo implClassInfo) {
+		if (implClassInfo.invalid) {
+			return false;
+		}
+		if (implClassInfo.baseInterface == null || implClassInfo.baseImpl != null) {
+			return true;
+		}
+		// Was the base interface actually processed?
+		ImplClassInfo baseImpl = processedInterfaces.get(implClassInfo.baseInterface);
+		if (baseImpl == null || !validateImplClassInfo(baseImpl)) {
+			implClassInfo.invalid = true;
+			return false;
+		}
+		// Done
+		implClassInfo.baseImpl = baseImpl;
+		return true;
 	}
 
 	private Mustache getTemplate() {
@@ -348,13 +399,17 @@ public class NIBeansProcessor extends AbstractProcessor {
 
 	public static class ImplClassInfo {
 		public final TypeElement intfElement;
+		public final TypeElement baseInterface;
+		public ImplClassInfo baseImpl;
 		public final String clsName;
-		public Map<String, Property> properties = new LinkedHashMap<>();
+		public Map<String, Property> properties = new TreeMap<>();
 		public final Collection<Property> propertyDefs = properties.values();
 		public int fullProperties = 0;
+		boolean invalid = false;
 
-		ImplClassInfo(TypeElement intfElement) {
+		ImplClassInfo(TypeElement intfElement, TypeElement baseInterface) {
 			this.intfElement = intfElement;
+			this.baseInterface = baseInterface;
 			clsName = intfElement.getSimpleName() + "_impl";
 		}
 	}
