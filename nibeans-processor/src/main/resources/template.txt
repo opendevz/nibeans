@@ -84,6 +84,10 @@ public class {{containerClassName}} {
             public {{intfElement.qualifiedName}} createInstance() {
                 return new {{clsName}}();
             }
+            @Override
+            public String toString() {
+                return "BeanProvider[{{intfElement.qualifiedName}}]";
+            }
         }
     }
 {{/classes}}
