@@ -149,7 +149,8 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private ImplClassInfo processInterafce(TypeElement intfElement) throws IOException {
 		final Types typeUtils = processingEnv.getTypeUtils();
 		// Only a singly base interface is supported, it should also be an IBean interface
-		if (intfElement.getInterfaces().size() > 1) {
+		// Generic parameters are not supported
+		if (intfElement.getInterfaces().size() > 1 || !intfElement.getTypeParameters().isEmpty()) {
 			return null;
 		}
 		TypeElement baseInterface = null;
