@@ -1,6 +1,8 @@
 package org.nibeans;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -37,6 +39,13 @@ public final class BeanFactory {
 			return (T) provider.createInstance();
 		}
 		return null;
+	}
+
+	/**
+	 * Get a list of all the registered bean providers.
+	 */
+	public List<BeanProvider<?>> getAllBeanProviders() {
+		return new ArrayList<>(providers.values());
 	}
 
 	static {

@@ -425,7 +425,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		public TypeMirror fieldType;
 
 		public String getFieldName() {
-			return "val_" + name;
+			return name;
 		}
 
 		public boolean isPrimitive() {
