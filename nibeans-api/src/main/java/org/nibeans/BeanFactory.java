@@ -21,8 +21,16 @@ import org.slf4j.LoggerFactory;
  */
 public final class BeanFactory {
 	private static final Logger LOG = LoggerFactory.getLogger(BeanFactory.class);
+	private static BeanFactory instance;
 	// All the registered providers
-	private static final Map<Class<?>, BeanProvider<?>> providers = new HashMap<>();
+	private final Map<Class<?>, BeanProvider<?>> providers = new HashMap<>();
+
+	public static BeanFactory getInstance() {
+		if (instance == null) {
+			instance = new BeanFactory();
+		}
+		return instance;
+	}
 
 	/**
 	 * Create an instance of the default bean implementation for the given interface.
@@ -33,7 +41,7 @@ public final class BeanFactory {
 	 *         given class definition.
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T createBean(Class<T> beanInterface) {
+	public <T> T createBean(Class<T> beanInterface) {
 		BeanProvider<?> provider = providers.get(beanInterface);
 		if (provider != null) {
 			return (T) provider.createInstance();
@@ -48,7 +56,7 @@ public final class BeanFactory {
 		return new ArrayList<>(providers.values());
 	}
 
-	static {
+	private BeanFactory() {
 		BeanProviderRegistry registry = new BeanProviderRegistry() {
 			@Override
 			public <T> void register(BeanProvider<T> provider) {

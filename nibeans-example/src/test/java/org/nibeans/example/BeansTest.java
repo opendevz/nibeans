@@ -47,7 +47,7 @@ public class BeansTest {
 
 	@Test
 	public void testBooleanProperties() {
-		Car car = BeanFactory.createBean(Car.class);
+		Car car = BeanFactory.getInstance().createBean(Car.class);
 		car.setAutomatic(true);
 		assertTrue(car.isAutomatic());
 		// This makes sure Boolean is kept in the setter
@@ -56,8 +56,8 @@ public class BeansTest {
 
 	@Test
 	public void testInheritance() {
-		Car car = BeanFactory.createBean(Car.class);
-		GasolineCar gasCar1 = BeanFactory.createBean(GasolineCar.class);
+		Car car = BeanFactory.getInstance().createBean(Car.class);
+		GasolineCar gasCar1 = BeanFactory.getInstance().createBean(GasolineCar.class);
 		// Make sure the implementation inherits that of the base interface
 		assertNotEquals(car.getClass(), gasCar1.getClass());
 		assertTrue(car.getClass().isAssignableFrom(gasCar1.getClass()));
@@ -70,7 +70,7 @@ public class BeansTest {
 		assertTrue(car.equals(gasCar1));
 		assertFalse(gasCar1.equals(car));
 		// Compare two cars
-		GasolineCar gasCar2 = BeanFactory.createBean(GasolineCar.class);
+		GasolineCar gasCar2 = BeanFactory.getInstance().createBean(GasolineCar.class);
 		gasCar2.setAutomatic(true);
 		gasCar2.setMake("BMW");
 		gasCar2.setOctaneLevel(95);
@@ -78,7 +78,7 @@ public class BeansTest {
 	}
 
 	private static Person createPersonBean() {
-		Person person = BeanFactory.createBean(Person.class);
+		Person person = BeanFactory.getInstance().createBean(Person.class);
 		person.setName(NAME);
 		person.setAge(AGE);
 		return person;
