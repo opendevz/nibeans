@@ -53,7 +53,7 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 
-import org.nibeans.IBean;
+import org.nibeans.NIBean;
 import org.nibeans.internal.BeanProviderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 
 /**
- * Processes classes annotated with {@link org.nibeans.IBean} and generated default implementations for them.
+ * Processes classes annotated with {@link org.nibeans.NIBean} and generated default implementations for them.
  * 
  * @author Tareq Sharafy (tareq.sharafy@sap.com)
  *
@@ -75,7 +75,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 	public static final String OPT_SOURCE_PACKAGES = "srcpackages";
 	public static final String OPT_TARGET_CLASS = "tgtclass";
 
-	private static final Class<? extends Annotation> BEAN_CLASS = IBean.class;
+	private static final Class<? extends Annotation> BEAN_CLASS = NIBean.class;
 	private static final Class<?> SERVICE_CLASS = BeanProviderService.class;
 	private static final Pattern NAME_PATTERN = Pattern.compile("^(\\w+(\\.\\w+)*)\\.(\\w+)$");
 

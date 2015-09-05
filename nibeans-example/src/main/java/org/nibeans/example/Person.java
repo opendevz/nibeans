@@ -15,9 +15,9 @@
  */
 package org.nibeans.example;
 
-import org.nibeans.IBean;
+import org.nibeans.NIBean;
 
-@IBean
+@NIBean
 public interface Person {
 
 	int getAge();

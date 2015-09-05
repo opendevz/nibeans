@@ -15,10 +15,24 @@
  */
 package org.nibeans.internal;
 
+/**
+ * 
+ * @author Tareq Sharafy (tareq.sharafy@sap.com)
+ *
+ * @param <T>
+ *            An interface that defines a java bean, annotated with {@link org.nibeans.NIBean} by definition.
+ */
 public interface BeanProvider<T> {
 
+	/**
+	 * Gets the class definition of the bean interface.
+	 */
 	public Class<T> getBeanInterface();
 
+	/**
+	 * Create new instance of a class that implements the bean interface defined by
+	 * {@link #getBeanInterface()}
+	 */
 	public T createInstance();
 
 }

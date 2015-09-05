@@ -40,6 +40,9 @@ public final class BeanFactory {
 	// All the registered providers
 	private final Map<Class<?>, BeanProvider<?>> providers = new HashMap<>();
 
+	/**
+	 * Get the only instance of this class.
+	 */
 	public static BeanFactory getInstance() {
 		if (instance == null) {
 			instance = new BeanFactory();

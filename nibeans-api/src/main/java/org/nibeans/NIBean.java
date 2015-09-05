@@ -26,7 +26,7 @@ import java.lang.annotation.RetentionPolicy;
  * the same type, and no other methods. Ordering of methods is insignificant. Example:
  * 
  * <pre>
- * &#64;IBean
+ * &#64;NIBean
  * public interface Person {
  * 
  * 	String getName();
@@ -45,5 +45,5 @@ import java.lang.annotation.RetentionPolicy;
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface IBean {
+public @interface NIBean {
 }
