@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/opendevz/nibeans.svg?branch=master)](https://travis-ci.org/opendevz/nibeans)
+
 No Implementation Beans
 ================
 

@@ -1,0 +1,10 @@
+language: java
+
+jdk:
+  - oraclejdk7
+
+branches:
+  only:
+    - master
+
+script: mvn surefire:test
