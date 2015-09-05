@@ -40,8 +40,8 @@
     </modules>
 
     <properties>
+        <stringtemplate.version>4.0.8</stringtemplate.version>
         <slf4j.version>1.7.12</slf4j.version>
-        <mustache.java.version>0.9.0</mustache.java.version>
         <junit.version>4.12</junit.version>
     </properties>
 

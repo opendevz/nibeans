@@ -1,108 +1,116 @@
-package {{pkgName}};
 
-public class {{containerClassName}} {
+ImplClass(info) ::= <<
+/** Bean implementation for interface {@link <info.intfElement.qualifiedName>} */
+public static class <info.clsName>
+    <if(info.baseImpl)>
+    extends <info.baseImpl.clsName>
+    <endif>
+    implements <info.intfElement.qualifiedName> {
 
-{{#classes}}
+}
+>>
 
-    /** Bean implementation for interface {@link {{intfElement.qualifiedName}}} */
-    public static class {{clsName}}
-        {{#baseImpl}}
-        extends {{baseImpl.clsName}}
-        {{/baseImpl}}
-        implements {{intfElement.qualifiedName}} {
+impl_file(pkgName,containerClassName,classes) ::= <<
 
-        {{#propertyDefs}}
-        private {{fieldType}} {{fieldName}};
-        {{/propertyDefs}}
+package <pkgName>;
 
-        {{#propertyDefs}}
-        /** {@inheritDoc} */
-        @Override
-        public {{getter.returnType}} {{getter.simpleName}}() {
-            return this.{{fieldName}};
-        }
-        /** {@inheritDoc} */
-        @Override
-        public void {{setter.simpleName}}({{setterType}} v) {
-            this.{{fieldName}} = v;
-        }
-        {{#chainSetter}}
-        /** {@inheritDoc} */
-        @Override
-        public {{clsName}} {{simpleName}}({{chainSetterType}} v) {
-            this.{{setter.simpleName}}(v);
-            return this;
-        }
-        {{/chainSetter}}
+public class <containerClassName> {
 
-        {{/propertyDefs}}
+<classes:{implClass|
+    public static class <implClass.clsName>
+        <if(implClass.baseImpl)>
+        extends <implClass.baseImpl.clsName>
+        <endif>
+        implements <implClass.intfElement.qualifiedName> {
+
+        // Data fields
+    <implClass.propertyDefs:{prop|
+    private <prop.fieldType> <prop.fieldName>;
+    }>
+    <implClass.propertyDefs:{prop|
+    /** {@inheritDoc\} */
+    @Override
+    public <prop.getter.returnType> <prop.getter.simpleName>() {
+        return this.<prop.fieldName>;
+    \}
+    /** {@inheritDoc\} */
+    @Override
+    public void <prop.setter.simpleName>(<prop.setterType> v) {
+        this.<prop.fieldName> = v;
+    \}
+    <if(prop.chainSetter)>
+    /** {@inheritDoc\} */
+    @Override
+    public <implClass.clsName> <prop.chainSetter.simpleName>(<prop.chainSetterType> v) {
+        this.<prop.fieldName> = v;
+        return this;
+    \}
+    <endif>
+
+    }>
+
         @Override
         public boolean equals(Object p) {
-            if (!(p instanceof {{intfElement.qualifiedName}}){{#baseImpl}} || !super.equals(p){{/baseImpl}}) {
+            if (!(p instanceof <implClass.intfElement.qualifiedName>)<if(implClass.baseImpl)> || !super.equals(p)<endif>) {
                 return false;
-            }
-            final {{intfElement.qualifiedName}} other = ({{intfElement.qualifiedName}})p;
-            {{#propertyDefs}}
-            // property {{name}}
-            {{fieldType}} {{name}}_other = other.{{getter.simpleName}}();
-            {{#primitive}}
-            if (this.{{fieldName}} != {{name}}_other) {
-                return false;
-            }
-            {{/primitive}}
-            {{^primitive}}
-            {{#array}}
-            if (!java.util.Arrays.equals(this.{{fieldName}}, {{name}}_other)) {
-                return false;
-            }
-            {{/array}}
-            {{^array}}
-            if (!{{pkgName}}.{{containerClassName}}.equalsNullSafe(this.{{fieldName}}, {{name}}_other)) {
-                return false;
-            }
-            {{/array}}
-            {{/primitive}}
-            {{/propertyDefs}}
+            \}
+            final <implClass.intfElement.qualifiedName> other = (<implClass.intfElement.qualifiedName>)p;
+        <implClass.propertyDefs:{prop|
+    // property <prop.name>
+    <prop.fieldType> <prop.name>_other = other.<prop.getter.simpleName>();
+    <if(prop.primitive)>
+    if (this.<prop.fieldName> != <prop.name>_other) {
+        return false;
+    \}
+    <elseif(prop.array)>
+    if (!java.util.Arrays.equals(this.<prop.fieldName>, <prop.name>_other)) {
+        return false;
+    \}
+    <else>
+    if (!<pkgName>.<containerClassName>.equalsNullSafe(this.<prop.fieldName>, <prop.name>_other)) {
+        return false;
+    \}
+    <endif>}>
             return true;
-        }
+        \}
 
         @Override
         public int hashCode() {
-            return java.util.Arrays.hashCode(new Object[]{ {{#baseImpl}}super.hashCode(){{/baseImpl}}{{^baseImpl}}null{{/baseImpl}}
-        {{#propertyDefs}}
-                ,this.{{fieldName}}
-        {{/propertyDefs}}
-            });
-        }
+            return java.util.Arrays.hashCode(new Object[]{<if(implClass.baseImpl)>super.hashCode(),<endif>
+                <implClass.propertyDefs:{prop|this.<prop.fieldName>};separator=",">\});
+        \}
 
-        public static class Provider implements org.nibeans.internal.BeanProvider<{{intfElement.qualifiedName}}> {
+        public static class Provider implements org.nibeans.internal.BeanProvider\<<implClass.intfElement.qualifiedName>\> {
             @Override
-            public Class<{{intfElement.qualifiedName}}> getBeanInterface() {
-                return {{intfElement.qualifiedName}}.class;
-            }
+            public Class\<<implClass.intfElement.qualifiedName>\> getBeanInterface() {
+                return <implClass.intfElement.qualifiedName>.class;
+            \}
             @Override
-            public {{intfElement.qualifiedName}} createInstance() {
-                return new {{clsName}}();
-            }
+            public <implClass.intfElement.qualifiedName> createInstance() {
+                return new <implClass.clsName>();
+            \}
             @Override
             public String toString() {
-                return "BeanProvider[{{intfElement.qualifiedName}}]";
-            }
-        }
-    }
-{{/classes}}
+                return "BeanProvider[<implClass.intfElement.qualifiedName>]";
+            \}
+        \}
+    \}
+
+}>
 
     public static class ProviderService implements org.nibeans.internal.BeanProviderService {
         @Override
         public void registerProviders(org.nibeans.internal.BeanProviderRegistry registry) {            
-            {{#classes}}
-            registry.register(new {{clsName}}.Provider());
-            {{/classes}}
-        }
-    }
+        <classes:{implClass|
+    registry.register(new <implClass.clsName>.Provider());
+        }>
+        \}
+    \}
 
     private static boolean equalsNullSafe(Object a, Object b) {
         return (a == null) ? (b == null) : (b != null && a.equals(b));
-    }
+    \}
 
 }
+
+>>

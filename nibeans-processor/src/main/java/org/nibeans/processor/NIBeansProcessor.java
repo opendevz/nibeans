@@ -16,12 +16,11 @@
 package org.nibeans.processor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,10 +56,9 @@ import org.nibeans.NIBean;
 import org.nibeans.internal.BeanProviderService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
+import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.STGroup;
+import org.stringtemplate.v4.STGroupFile;
 
 /**
  * Processes classes annotated with {@link org.nibeans.NIBean} and generated default implementations for them.
@@ -82,7 +80,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private final Set<String> packagesToScan = new HashSet<>();
 	private String targetPackage;
 	private String targetClass;
-	private Mustache template;
+	private STGroup templateGroup;
 	private final Map<TypeElement, ImplClassInfo> processedInterfaces = new HashMap<>();
 
 	@Override
@@ -354,17 +352,16 @@ public class NIBeansProcessor extends AbstractProcessor {
 			}
 		});
 		// Generate the container class
-		Map<String, Object> params = new HashMap<>();
-		params.put("pkgName", targetPackage);
-		params.put("containerClassName", targetClass);
-		params.put("classes", validImpls);
+		ST tmpl = getTemplate();
+		tmpl.add("pkgName", targetPackage);
+		tmpl.add("containerClassName", targetClass);
+		tmpl.add("classes", validImpls);
 		// Write the target class file
 		JavaFileObject targetClassObj = processingEnv.getFiler().createSourceFile(targetPackage + "." + targetClass);
 		try (OutputStream output = targetClassObj.openOutputStream()) {
-			OutputStreamWriter writer = new OutputStreamWriter(output);
-			Mustache template = getTemplate();
-			template.execute(writer, params);
-			writer.flush();
+			String contents = tmpl.render();
+			byte[] bytes = contents.getBytes(StandardCharsets.UTF_8);
+			output.write(bytes);
 		}
 		// Add the providers
 		FileObject res1 = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
@@ -395,14 +392,13 @@ public class NIBeansProcessor extends AbstractProcessor {
 		return true;
 	}
 
-	private Mustache getTemplate() {
-		if (template != null) {
-			return template;
+	private ST getTemplate() {
+		if (templateGroup == null) {
+			URL in = getClass().getResource("/template.txt");
+			templateGroup = new STGroupFile(in, StandardCharsets.UTF_8.name(), '<', '>');
+			templateGroup.load();
 		}
-		InputStream istm = NIBeansProcessor.class.getResourceAsStream("/template.txt");
-		InputStreamReader reader = new InputStreamReader(istm);
-		MustacheFactory factory = new DefaultMustacheFactory();
-		return template = factory.compile(reader, "template1");
+		return templateGroup.getInstanceOf("impl_file");
 	}
 
 	private static String getPropetyName(String name, String prefix) {
