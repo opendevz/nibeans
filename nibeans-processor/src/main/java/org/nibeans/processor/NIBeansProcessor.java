@@ -54,8 +54,6 @@ import javax.tools.StandardLocation;
 
 import org.nibeans.NIBean;
 import org.nibeans.internal.BeanProviderService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
@@ -68,7 +66,6 @@ import org.stringtemplate.v4.STGroupFile;
  */
 @SupportedOptions({ NIBeansProcessor.OPT_SOURCE_PACKAGES, NIBeansProcessor.OPT_TARGET_CLASS })
 public class NIBeansProcessor extends AbstractProcessor {
-	private static final Logger LOG = LoggerFactory.getLogger(NIBeansProcessor.class);
 
 	public static final String OPT_SOURCE_PACKAGES = "srcpackages";
 	public static final String OPT_TARGET_CLASS = "tgtclass";
@@ -82,6 +79,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private String targetClass;
 	private STGroup templateGroup;
 	private final Map<TypeElement, ImplClassInfo> processedInterfaces = new HashMap<>();
+	private final IssueTracker tracker = new IssueTracker();
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -131,27 +129,24 @@ public class NIBeansProcessor extends AbstractProcessor {
 			// Get which classes to scan
 			boolean claimed = false;
 			for (Element element : roundEnv.getElementsAnnotatedWith(BEAN_CLASS)) {
-				// Only interfaces are processed
-				if (element.getKind() != ElementKind.INTERFACE) {
-					continue;
-				}
-				TypeElement intfElement = (TypeElement) element;
 				// Make sure the interface is inside one of the packages explicitly specified
-				Element packageElm = intfElement.getEnclosingElement();
+				Element packageElm = element.getEnclosingElement();
 				if (packageElm == null || packageElm.getKind() != ElementKind.PACKAGE
 						|| !packagesToScan.contains(((PackageElement) packageElm).getQualifiedName().toString())) {
 					continue;
 				}
 				// Process this interface
-				ImplClassInfo clsInfo = processInterafce(intfElement);
+				tracker.enterScope(element);
+				ImplClassInfo clsInfo = processInterafce(element);
 				if (clsInfo != null) {
-					processedInterfaces.put(intfElement, clsInfo);
+					processedInterfaces.put(clsInfo.intfElement, clsInfo);
 					claimed = true;
 				}
+				tracker.leaveScope();
 			}
 			return claimed;
 		} catch (IOException e) {
-			LOG.warn(e.getMessage(), e);
+			tracker.addIssue(e.getMessage(), e);
 			return false;
 		}
 	}
@@ -159,11 +154,21 @@ public class NIBeansProcessor extends AbstractProcessor {
 	/**
 	 * Process a single bean interface.
 	 */
-	private ImplClassInfo processInterafce(TypeElement intfElement) throws IOException {
-		final Types typeUtils = processingEnv.getTypeUtils();
+	private ImplClassInfo processInterafce(Element element) throws IOException {
+		// Only interfaces are allowed
+		if (element.getKind() != ElementKind.INTERFACE) {
+			tracker.addIssue("not an interface type");
+			return null;
+		}
+		TypeElement intfElement = (TypeElement) element;
 		// Only a singly base interface is supported, it should also be an IBean interface
 		// Generic parameters are not supported
-		if (intfElement.getInterfaces().size() > 1 || !intfElement.getTypeParameters().isEmpty()) {
+		if (intfElement.getInterfaces().size() > 1) {
+			tracker.addIssue("there is more than one base interface");
+			return null;
+		}
+		if (!intfElement.getTypeParameters().isEmpty()) {
+			tracker.addIssue("there are generic type arguments");
 			return null;
 		}
 		TypeElement baseInterface = null;
@@ -181,6 +186,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		// Working descriptor
 		ImplClassInfo info = new ImplClassInfo(intfElement, baseInterface);
 		// Inspect the elements
+		boolean good = true;
 		for (Element enclosedElement : intfElement.getEnclosedElements()) {
 			if (enclosedElement.getKind() != ElementKind.METHOD) {
 				continue;
@@ -188,43 +194,37 @@ public class NIBeansProcessor extends AbstractProcessor {
 			ExecutableElement methodElement = (ExecutableElement) enclosedElement;
 			final String name = methodElement.getSimpleName().toString();
 			// Check the name
-			String propName = null;
+			tracker.enterScope(methodElement);
+			String propName;
+			boolean methodIsGood;
 			if ((propName = getPropetyName(name, "get")) != null) {
-				if (!processGetter(propName, methodElement, info)) {
-					return null;
-				}
+				methodIsGood = processGetter(propName, methodElement, info);
 			} else if ((propName = getPropetyName(name, "is")) != null) {
-				// isSomething() must be a boolean getter
-				TypeMirror propType = methodElement.getReturnType();
-				PrimitiveType boolType = typeUtils.getPrimitiveType(TypeKind.BOOLEAN);
-				if (!(typeUtils.isSameType(boolType, propType)
-						|| typeUtils.isSameType(boolType, typeUtils.unboxedType(propType)))
-						|| !processGetter(propName, methodElement, info)) {
-					return null;
-				}
+				methodIsGood = processIsGetter(propName, methodElement, info);
 			} else if ((propName = getPropetyName(name, "set")) != null) {
-				if (!processSetter(propName, methodElement, info)) {
-					return null;
-				}
+				methodIsGood = processSetter(propName, methodElement, info);
 			} else if ((propName = getPropetyName(name, "with")) != null) {
-				if (!processChainSetter(propName, methodElement, info)) {
-					return null;
-				}
+				methodIsGood = processChainSetter(propName, methodElement, info);
 			} else {
-				return null;
+				tracker.addIssue("unsupported method %s", methodElement);
+				methodIsGood = false;
 			}
+			tracker.leaveScope();
+			good = methodIsGood && good;
 		}
 		// If there are any partial properties, fail
 		if (info.fullProperties < info.properties.size()) {
-			return null;
+			tracker.addIssue("there are %s incomplete bean properties", info.properties.size() - info.fullProperties);
+			good = false;
 		}
 		// Result
-		return info;
+		return good ? info : null;
 	}
 
 	private boolean processGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
 		// Getters should have no arguments
 		if (!methodElement.getParameters().isEmpty()) {
+			tracker.addIssue("unsupported getter signature");
 			return false;
 		}
 		// Match return type
@@ -233,19 +233,34 @@ public class NIBeansProcessor extends AbstractProcessor {
 		if (property == null) {
 			property = addProperty(propName, propType, info);
 		} else if (property.getter != null) {
+			tracker.addIssue("conflict with already defined getter %s", property.getter);
 			return false;
-		} else if (property.getter == null && processingEnv.getTypeUtils().isSameType(property.fieldType, propType)) {
+		} else if (processingEnv.getTypeUtils().isSameType(property.fieldType, propType)) {
 			++info.fullProperties;
 		} else {
+			tracker.addIssue("getter type %s isn't compatible with %s", methodElement, propType, property.fieldType);
 			return false;
 		}
 		property.getter = methodElement;
 		return true;
 	}
 
+	private boolean processIsGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
+		final Types typeUtils = processingEnv.getTypeUtils();
+		// isSomething() must be a boolean getter
+		TypeMirror propTypePrim = getPrimitiveType(methodElement.getReturnType());
+		PrimitiveType boolType = typeUtils.getPrimitiveType(TypeKind.BOOLEAN);
+		if (propTypePrim == null || !(typeUtils.isSameType(boolType, propTypePrim))) {
+			tracker.addIssue("non-boolean return type %s", methodElement.getReturnType());
+			return false;
+		}
+		return processGetter(propName, methodElement, info);
+	}
+
 	private boolean processSetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
 		// Setters should have no return values and a single argument
 		if (methodElement.getReturnType().getKind() != TypeKind.VOID || methodElement.getParameters().size() != 1) {
+			tracker.addIssue("unsupported setter signature");
 			return false;
 		}
 		// Setters should have a single argument with correct property type
@@ -253,10 +268,14 @@ public class NIBeansProcessor extends AbstractProcessor {
 		Property property = info.properties.get(propName);
 		if (property == null) {
 			property = addProperty(propName, setterType, info);
-		} else if (property.setter == null && isSameType(property.fieldType, setterType)) {
+		} else if (property.setter != null) {
+			tracker.addIssue("conflict with already defined setter %s", property.setter);
+			return false;
+		} else if (isSameType(property.fieldType, setterType)) {
 			++info.fullProperties;
 			boxFieldTypeIfNecessary(setterType, property);
 		} else {
+			tracker.addIssue("setter type %s isn't compatible with %s", setterType, property.fieldType);
 			return false;
 		}
 		property.setter = methodElement;
@@ -270,6 +289,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		// Chain setter should have a single argument and the parent class as return type
 		if (methodElement.getParameters().size() != 1
 				|| !typeUtils.isSameType(methodElement.getReturnType(), intfType)) {
+			tracker.addIssue("unsupported chain setter signature");
 			return false;
 		}
 		// Setters should have a single argument with correct property type
@@ -277,7 +297,11 @@ public class NIBeansProcessor extends AbstractProcessor {
 		Property property = info.properties.get(propName);
 		if (property == null) {
 			property = addProperty(propName, chainSetterType, info);
-		} else if (property.chainSetter != null || !isSameType(property.fieldType, chainSetterType)) {
+		} else if (property.chainSetter != null) {
+			tracker.addIssue("conflict with already defined chain getter %s", property.getter);
+			return false;
+		} else if (!isSameType(property.fieldType, chainSetterType)) {
+			tracker.addIssue("chain setter type %s isn't compatible with %s", chainSetterType, property.fieldType);
 			return false;
 		}
 		boxFieldTypeIfNecessary(chainSetterType, property);
@@ -332,15 +356,20 @@ public class NIBeansProcessor extends AbstractProcessor {
 	 * Generate the results of this processing run.
 	 */
 	private boolean generateResults() throws IOException {
-		if (processedInterfaces.isEmpty()) {
-			return false;
-		}
 		// Link base class implementations
 		List<ImplClassInfo> validImpls = new ArrayList<>(processedInterfaces.size());
 		for (ImplClassInfo implClassInfo : processedInterfaces.values()) {
+			tracker.enterScope(implClassInfo.intfElement);
 			if (validateImplClassInfo(implClassInfo)) {
 				validImpls.add(implClassInfo);
 			}
+			tracker.leaveScope();
+		}
+		// Print any issues
+		tracker.printIssues(System.err);
+		// Nothing to generate?
+		if (validImpls.isEmpty()) {
+			return false;
 		}
 		// Sort to keep the output consistent
 		Collections.sort(validImpls, new Comparator<ImplClassInfo>() {
@@ -385,6 +414,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		ImplClassInfo baseImpl = processedInterfaces.get(implClassInfo.baseInterface);
 		if (baseImpl == null || !validateImplClassInfo(baseImpl)) {
 			implClassInfo.invalid = true;
+			tracker.addIssue("base interface %s is not a generated bean", implClassInfo.baseInterface);
 			return false;
 		}
 		// Done
