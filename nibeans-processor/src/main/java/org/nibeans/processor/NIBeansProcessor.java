@@ -196,8 +196,11 @@ public class NIBeansProcessor extends AbstractProcessor {
 			// Check the name
 			tracker.enterScope(methodElement);
 			String propName;
-			boolean methodIsGood;
-			if ((propName = getPropetyName(name, "get")) != null) {
+			boolean methodIsGood = false;
+			if (!methodElement.getTypeParameters().isEmpty()) {
+				tracker.addIssue("there are member-level generic type arguments", methodElement);
+				methodIsGood = false;
+			} else if ((propName = getPropetyName(name, "get")) != null) {
 				methodIsGood = processGetter(propName, methodElement, info);
 			} else if ((propName = getPropetyName(name, "is")) != null) {
 				methodIsGood = processIsGetter(propName, methodElement, info);

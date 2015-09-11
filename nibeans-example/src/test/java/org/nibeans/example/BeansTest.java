@@ -18,6 +18,7 @@ package org.nibeans.example;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -90,6 +91,16 @@ public class BeansTest {
 		gasCar2.setMake("BMW");
 		gasCar2.setOctaneLevel(95);
 		assertFalse(gasCar1.equals(gasCar2));
+	}
+
+	@Test
+	public void testTypeLevelGenericArgs() {
+		assertNull(BeanFactory.getInstance().createBean(GenericBeanA.class));
+	}
+
+	@Test
+	public void testMethodLevelGenericArgs() {
+		assertNull(BeanFactory.getInstance().createBean(GenericBeanA.class));
 	}
 
 	private static Person createPersonBean() {

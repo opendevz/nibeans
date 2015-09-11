@@ -63,6 +63,13 @@ public class IssueTracker {
 	}
 
 	public void printIssues(PrintStream errorOut) {
+		int totalIssueCount = rootIssueScope.getTotalIssueCount();
+		if (totalIssueCount == 0) {
+			return;
+		}
+		errorOut.print("some issues were detected while generating bean classes [");
+		errorOut.print(totalIssueCount);
+		errorOut.println(" issues]");
 		printScopeIssues(rootIssueScope, 0, errorOut);
 	}
 
@@ -76,6 +83,7 @@ public class IssueTracker {
 		int subIndent = indent + 1;
 		for (String issueMsg : issueScope.issues) {
 			indent(subIndent, errorOut);
+			errorOut.print("# ");
 			errorOut.println(issueMsg);
 		}
 		for (IssueScope childScope : issueScope.childScopes.values()) {
@@ -85,7 +93,7 @@ public class IssueTracker {
 
 	private void indent(int n, PrintStream errorOut) {
 		for (int i = 0; i < n; ++i) {
-			errorOut.print("  ");
+			errorOut.print(" ");
 		}
 	}
 
@@ -96,6 +104,14 @@ public class IssueTracker {
 
 		public IssueScope(Element element) {
 			this.element = element;
+		}
+
+		public int getTotalIssueCount() {
+			int c = issues.size();
+			for (IssueScope childScope : childScopes.values()) {
+				c += childScope.getTotalIssueCount();
+			}
+			return c;
 		}
 	}
 
