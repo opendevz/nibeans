@@ -11,6 +11,9 @@ public static class <info.clsName>
 >>
 
 impl_file(pkgName,containerClassName,classes) ::= <<
+// This file was generated automatically by nibeans
+// PLEASE DO NOT MODIFY MANUALLY
+// more info: https://github.com/opendevz/nibeans
 
 package <pkgName>;
 
