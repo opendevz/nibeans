@@ -64,8 +64,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <compilerArgs>
-                        <arg>-Asrcpackages=org.nibeans.example</arg>
-                        <arg>-Atgtclass=org.nibeans.example.dgen.BeanImpls</arg>
+                        <arg>-Anib.srcpackages=org.nibeans.example</arg>
+                        <arg>-Anib.tgtclass=org.nibeans.example.dgen.BeanImpls</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

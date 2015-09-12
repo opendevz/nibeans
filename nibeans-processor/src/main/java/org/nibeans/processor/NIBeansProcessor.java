@@ -64,22 +64,31 @@ import org.stringtemplate.v4.STGroupFile;
  * @author Tareq Sharafy (tareq.sharafy@sap.com)
  *
  */
-@SupportedOptions({ NIBeansProcessor.OPT_SOURCE_PACKAGES, NIBeansProcessor.OPT_TARGET_CLASS })
+@SupportedOptions({ //
+		NIBeansProcessor.OPT_SOURCE_PACKAGES, //
+		NIBeansProcessor.OPT_TARGET_CLASS, //
+		NIBeansProcessor.OPT_STRICT })
 public class NIBeansProcessor extends AbstractProcessor {
 
-	public static final String OPT_SOURCE_PACKAGES = "srcpackages";
-	public static final String OPT_TARGET_CLASS = "tgtclass";
+	private static final String OPTIONS_PREFIX = "nib.";
+	public static final String OPT_SOURCE_PACKAGES = OPTIONS_PREFIX + "srcpackages";
+	public static final String OPT_TARGET_CLASS = OPTIONS_PREFIX + "tgtclass";
+	public static final String OPT_STRICT = OPTIONS_PREFIX + "strict";
 
 	private static final Class<? extends Annotation> BEAN_CLASS = NIBean.class;
 	private static final Class<?> SERVICE_CLASS = BeanProviderService.class;
 	private static final Pattern NAME_PATTERN = Pattern.compile("^(\\w+(\\.\\w+)*)\\.(\\w+)$");
 
+	// Processor options
 	private final Set<String> packagesToScan = new HashSet<>();
 	private String targetPackage;
 	private String targetClass;
+	private boolean isStrict;
+
+	// Working objects
 	private STGroup templateGroup;
 	private final Map<TypeElement, ImplClassInfo> processedInterfaces = new HashMap<>();
-	private final IssueTracker tracker = new IssueTracker();
+	private IssueTracker tracker;
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -110,6 +119,13 @@ public class NIBeansProcessor extends AbstractProcessor {
 		if (targetClass == null) {
 			throw new IllegalArgumentException("Missing or bad value for option -A" + OPT_TARGET_CLASS);
 		}
+		// Strict mode
+		String strictValue = processingEnv.getOptions().get(OPT_STRICT);
+		if (strictValue != null) {
+			isStrict = Boolean.valueOf(strictValue);
+		}
+		// Other
+		tracker = new IssueTracker(processingEnv.getMessager(), isStrict);
 	}
 
 	@Override
@@ -117,6 +133,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		return Collections.singleton(BEAN_CLASS.getName());
 	}
 
+	/** {@inheritDoc} */
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		if (roundEnv.errorRaised()) {
@@ -369,7 +386,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 			tracker.leaveScope();
 		}
 		// Print any issues
-		tracker.printIssues(System.err);
+		tracker.printIssues();
 		// Nothing to generate?
 		if (validImpls.isEmpty()) {
 			return false;

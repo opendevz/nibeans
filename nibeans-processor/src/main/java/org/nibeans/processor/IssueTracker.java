@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
+import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
 
 /**
  * Tracks issues with bean definitions during processing.
@@ -33,9 +35,14 @@ import javax.lang.model.element.Element;
 public class IssueTracker {
 	private final IssueScope rootIssueScope = new IssueScope(null);
 	private final Stack<IssueScope> issueScopeStack = new Stack<>();
+	private final PrintStream errorOut = System.err;
+	private final Messager messager;
+	private final Kind messageKind;
 
-	public IssueTracker() {
+	public IssueTracker(Messager messager, boolean isStrict) {
 		issueScopeStack.push(rootIssueScope);
+		this.messager = messager;
+		messageKind = isStrict ? Kind.ERROR : Kind.WARNING;
 	}
 
 	public void enterScope(Element scopeElement) {
@@ -62,7 +69,7 @@ public class IssueTracker {
 		issueScopeStack.peek().issues.add(msg);
 	}
 
-	public void printIssues(PrintStream errorOut) {
+	public void printIssues() {
 		int totalIssueCount = rootIssueScope.getTotalIssueCount();
 		if (totalIssueCount == 0) {
 			return;
@@ -85,6 +92,7 @@ public class IssueTracker {
 			indent(subIndent, errorOut);
 			errorOut.print("# ");
 			errorOut.println(issueMsg);
+			messager.printMessage(messageKind, issueMsg, issueScope.element);
 		}
 		for (IssueScope childScope : issueScope.childScopes.values()) {
 			printScopeIssues(childScope, subIndent, errorOut);

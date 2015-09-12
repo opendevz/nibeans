@@ -48,8 +48,8 @@ nibeans is based on annotation processing for processing beans and generating fu
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
                 <compilerArgs>
-                    <arg>-Asrcpackages=*your source package*</arg>
-                    <arg>-Atgtclass=*target class (optional)*</arg>
+                    <arg>-Anib.srcpackages=*your source package*</arg>
+                    <arg>-Anib.tgtclass=*target class (optional)*</arg>
                 </compilerArgs>
             </configuration>
         </plugin>
