@@ -94,6 +94,21 @@ public class BeansTest {
 	}
 
 	@Test
+	public void testSettersThatReturnObject() {
+		Car car = BeanFactory.getInstance().createBean(Car.class);
+		// Normal setters
+		final String plateId = "aabbcc";
+		Car returnedObj = car.setPlateID(plateId);
+		assertEquals(plateId, car.getPlateID());
+		assertTrue(returnedObj == car);
+		// Chain setters
+		final String make = "BMW";
+		returnedObj = car.withMake(make);
+		assertEquals(make, car.getMake());
+		assertTrue(returnedObj == car);
+	}
+
+	@Test
 	public void testTypeLevelGenericArgs() {
 		assertNull(BeanFactory.getInstance().createBean(GenericBeanA.class));
 	}

@@ -285,7 +285,23 @@ public class NIBeansProcessor extends AbstractProcessor {
 
 	private boolean processSetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
 		// Setters should have no return values and a single argument
-		if (methodElement.getReturnType().getKind() != TypeKind.VOID || methodElement.getParameters().size() != 1) {
+		boolean badSig;
+		boolean setterReturnsObject = false;
+		if (methodElement.getParameters().size() != 1) {
+			badSig = true;
+		} else if (methodElement.getReturnType().getKind() != TypeKind.VOID) {
+			// A setter can return either void or the enclosing interface
+			DeclaredType enclosingType = processingEnv.getTypeUtils().getDeclaredType(info.intfElement);
+			if (processingEnv.getTypeUtils().isSameType(enclosingType, methodElement.getReturnType())) {
+				setterReturnsObject = true;
+				badSig = false;
+			} else {
+				badSig = true;
+			}
+		} else {
+			badSig = false;
+		}
+		if (badSig) {
 			tracker.addIssue("unsupported setter signature");
 			return false;
 		}
@@ -306,6 +322,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		}
 		property.setter = methodElement;
 		property.setterType = setterType;
+		property.setterReturnsObject = setterReturnsObject;
 		return true;
 	}
 
@@ -487,6 +504,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		public ExecutableElement getter;
 		public ExecutableElement setter;
 		public TypeMirror setterType;
+		public boolean setterReturnsObject;
 		public ExecutableElement chainSetter;
 		public TypeMirror chainSetterType;
 		public TypeMirror fieldType;

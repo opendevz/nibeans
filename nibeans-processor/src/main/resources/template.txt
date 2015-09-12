@@ -38,8 +38,9 @@ public class <containerClassName> {
     \}
     /** {@inheritDoc\} */
     @Override
-    public void <prop.setter.simpleName>(<prop.setterType> v) {
+    public <if(prop.setterReturnsObject)><implClass.clsName><else>void<endif> <prop.setter.simpleName>(<prop.setterType> v) {
         this.<prop.fieldName> = v;
+        <if(prop.setterReturnsObject)>return this;<endif>
     \}
     <if(prop.chainSetter)>
     /** {@inheritDoc\} */

@@ -30,4 +30,8 @@ public interface Car {
 
 	void setAutomatic(Boolean v);
 
+	String getPlateID();
+
+	Car setPlateID(String v);
+
 }
