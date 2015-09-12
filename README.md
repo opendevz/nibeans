@@ -49,7 +49,6 @@ nibeans is based on annotation processing for processing beans and generating fu
             <configuration>
                 <compilerArgs>
                     <arg>-Anib.srcpackages=*your source package*</arg>
-                    <arg>-Anib.tgtclass=*target class (optional)*</arg>
                 </compilerArgs>
             </configuration>
         </plugin>

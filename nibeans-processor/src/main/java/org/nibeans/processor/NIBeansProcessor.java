@@ -75,6 +75,8 @@ public class NIBeansProcessor extends AbstractProcessor {
 	public static final String OPT_TARGET_CLASS = OPTIONS_PREFIX + "tgtclass";
 	public static final String OPT_STRICT = OPTIONS_PREFIX + "strict";
 
+	private static final String DEFAULT_TARGET_PACKAGE = ".beanimplementations";
+	private static final String DEFAULT_TARGET_CLASS = "BeanImplementations";
 	private static final Class<? extends Annotation> BEAN_CLASS = NIBean.class;
 	private static final Class<?> SERVICE_CLASS = BeanProviderService.class;
 	private static final Pattern NAME_PATTERN = Pattern.compile("^(\\w+(\\.\\w+)*)\\.(\\w+)$");
@@ -115,9 +117,13 @@ public class NIBeansProcessor extends AbstractProcessor {
 				targetPackage = m.group(1);
 				targetClass = m.group(3);
 			}
-		}
-		if (targetClass == null) {
-			throw new IllegalArgumentException("Missing or bad value for option -A" + OPT_TARGET_CLASS);
+			if (targetClass == null) {
+				throw new IllegalArgumentException("Missing or bad value for option -A" + OPT_TARGET_CLASS);
+			}
+		} else {
+			// If no target implementation container class is specified, use the default one
+			targetPackage = packagesToScan.iterator().next() + DEFAULT_TARGET_PACKAGE;
+			targetClass = DEFAULT_TARGET_CLASS;
 		}
 		// Strict mode
 		String strictValue = processingEnv.getOptions().get(OPT_STRICT);

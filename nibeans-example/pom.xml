@@ -65,7 +65,6 @@
                 <configuration>
                     <compilerArgs>
                         <arg>-Anib.srcpackages=org.nibeans.example</arg>
-                        <arg>-Anib.tgtclass=org.nibeans.example.dgen.BeanImpls</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
