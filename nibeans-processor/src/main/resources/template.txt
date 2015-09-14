@@ -1,15 +1,4 @@
 
-ImplClass(info) ::= <<
-/** Bean implementation for interface {@link <info.intfElement.qualifiedName>} */
-public static class <info.clsName>
-    <if(info.baseImpl)>
-    extends <info.baseImpl.clsName>
-    <endif>
-    implements <info.intfElement.qualifiedName> {
-
-}
->>
-
 impl_file(pkgName,containerClassName,classes) ::= <<
 // This file was generated automatically by nibeans
 // PLEASE DO NOT MODIFY MANUALLY
@@ -19,39 +8,41 @@ package <pkgName>;
 
 public class <containerClassName> {
 
+    private <containerClassName>() {\}
+
 <classes:{implClass|
+    @SuppressWarnings("serial")
     public static class <implClass.clsName>
-        <if(implClass.baseImpl)>
-        extends <implClass.baseImpl.clsName>
-        <endif>
-        implements <implClass.intfElement.qualifiedName> {
+        <if(implClass.baseImpl)>extends <implClass.baseImpl.clsName><endif>
+        implements <implClass.intfElement.qualifiedName>,
+                   java.io.Serializable {
 
         // Data fields
-    <implClass.propertyDefs:{prop|
-    private <prop.fieldType> <prop.fieldName>;
-    }>
-    <implClass.propertyDefs:{prop|
-    /** {@inheritDoc\} */
-    @Override
-    public <prop.getter.returnType> <prop.getter.simpleName>() {
-        return this.<prop.fieldName>;
-    \}
-    /** {@inheritDoc\} */
-    @Override
-    public <if(prop.setterReturnsObject)><implClass.clsName><else>void<endif> <prop.setter.simpleName>(<prop.setterType> v) {
-        this.<prop.fieldName> = v;
-        <if(prop.setterReturnsObject)>return this;<endif>
-    \}
-    <if(prop.chainSetter)>
-    /** {@inheritDoc\} */
-    @Override
-    public <implClass.clsName> <prop.chainSetter.simpleName>(<prop.chainSetterType> v) {
-        this.<prop.fieldName> = v;
-        return this;
-    \}
-    <endif>
+<implClass.propertyDefs:{prop|
+        private <prop.fieldType> <prop.fieldName>;
+}>
+<implClass.propertyDefs:{prop|
+        /** {@inheritDoc\} */
+        @Override
+        public <prop.getter.returnType> <prop.getter.simpleName>() {
+            return this.<prop.fieldName>;
+        \}
+        /** {@inheritDoc\} */
+        @Override
+        public <if(prop.setterReturnsObject)><implClass.clsName><else>void<endif> <prop.setter.simpleName>(<prop.setterType> v) {
+            this.<prop.fieldName> = v;
+            <if(prop.setterReturnsObject)>return this;<endif>
+        \}
+<if(prop.chainSetter)>
+        /** {@inheritDoc\} */
+        @Override
+        public <implClass.clsName> <prop.chainSetter.simpleName>(<prop.chainSetterType> v) {
+            this.<prop.fieldName> = v;
+            return this;
+        \}
+<endif>
 
-    }>
+}>
 
         @Override
         public boolean equals(Object p) {
@@ -59,22 +50,23 @@ public class <containerClassName> {
                 return false;
             \}
             final <implClass.intfElement.qualifiedName> other = (<implClass.intfElement.qualifiedName>)p;
-        <implClass.propertyDefs:{prop|
-    // property <prop.name>
-    <prop.fieldType> <prop.name>_other = other.<prop.getter.simpleName>();
-    <if(prop.primitive)>
-    if (this.<prop.fieldName> != <prop.name>_other) {
-        return false;
-    \}
-    <elseif(prop.array)>
-    if (!java.util.Arrays.equals(this.<prop.fieldName>, <prop.name>_other)) {
-        return false;
-    \}
-    <else>
-    if (!<pkgName>.<containerClassName>.equalsNullSafe(this.<prop.fieldName>, <prop.name>_other)) {
-        return false;
-    \}
-    <endif>}>
+<implClass.propertyDefs:{prop|
+            // property <prop.name>
+            <prop.fieldType> <prop.name>_other = other.<prop.getter.simpleName>();
+<if(prop.primitive)>
+            if (this.<prop.fieldName> != <prop.name>_other) {
+                    return false;
+            \}
+<elseif(prop.array)>
+            if (!java.util.Arrays.equals(this.<prop.fieldName>, <prop.name>_other)) {
+                return false;
+            \}
+<else>
+            if (!org.nibeans.internal.BeanImplementationHelper.equalsNullSafe(this.<prop.fieldName>, <prop.name>_other)) {
+                return false;
+            \}
+<endif>
+}>
             return true;
         \}
 
@@ -105,14 +97,10 @@ public class <containerClassName> {
     public static class ProviderService implements org.nibeans.internal.BeanProviderService {
         @Override
         public void registerProviders(org.nibeans.internal.BeanProviderRegistry registry) {            
-        <classes:{implClass|
-    registry.register(new <implClass.clsName>.Provider());
-        }>
+<classes:{implClass|
+            registry.register(new <implClass.clsName>.Provider());
+}>
         \}
-    \}
-
-    private static boolean equalsNullSafe(Object a, Object b) {
-        return (a == null) ? (b == null) : (b != null && a.equals(b));
     \}
 
 }

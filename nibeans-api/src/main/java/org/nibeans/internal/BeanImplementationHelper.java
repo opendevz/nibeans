@@ -13,29 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nibeans.example;
+package org.nibeans.internal;
 
-import org.nibeans.NIBean;
+import java.util.Objects;
 
-@NIBean
-public interface Car {
+/**
+ * Helper methods for bean implementations.
+ * 
+ * @author Tareq Sharafy (tareq.sharafy@sap.com)
+ *
+ */
+public class BeanImplementationHelper {
 
-	String getMake();
-
-	void setMake(String v);
-
-	Car withMake(String v);
-
-	boolean isAutomatic();
-
-	void setAutomatic(Boolean v);
-
-	String getPlateID();
-
-	Car setPlateID(String v);
-
-	String[] getOwners();
-
-	void setOwners(String[] v);
+	/**
+	 * Returns true if and only if a and b are equal. The comparison is sensitive to nulls.
+	 */
+	public static boolean equalsNullSafe(Object a, Object b) {
+		return Objects.equals(a, b);
+	}
 
 }
