@@ -22,17 +22,28 @@ public class <containerClassName> {
         private <prop.fieldType> <prop.fieldName>;
 }>
 <implClass.propertyDefs:{prop|
+<if(prop.getter)>
         /** {@inheritDoc\} */
         @Override
         public <prop.getter.returnType> <prop.getter.simpleName>() {
             return this.<prop.fieldName>;
         \}
+<endif>
+<if(prop.booleanGetter)>
+        /** {@inheritDoc\} */
+        @Override
+        public <prop.booleanGetter.returnType> <prop.booleanGetter.simpleName>() {
+            return this.<prop.fieldName>;
+        \}
+<endif>
+<if(prop.setter)>
         /** {@inheritDoc\} */
         @Override
         public <if(prop.setterReturnsObject)><implClass.clsName><else>void<endif> <prop.setter.simpleName>(<prop.setterType> v) {
             this.<prop.fieldName> = v;
             <if(prop.setterReturnsObject)>return this;<endif>
         \}
+<endif>
 <if(prop.chainSetter)>
         /** {@inheritDoc\} */
         @Override
@@ -52,7 +63,7 @@ public class <containerClassName> {
             final <implClass.intfElement.qualifiedName> other = (<implClass.intfElement.qualifiedName>)p;
 <implClass.propertyDefs:{prop|
             // property <prop.name>
-            <prop.fieldType> <prop.name>_other = other.<prop.getter.simpleName>();
+            <prop.fieldType> <prop.name>_other = other.<if(prop.getter)><prop.getter.simpleName><else><prop.booleanGetter.simpleName><endif>();
 <if(prop.primitive)>
             if (this.<prop.fieldName> != <prop.name>_other) {
                     return false;

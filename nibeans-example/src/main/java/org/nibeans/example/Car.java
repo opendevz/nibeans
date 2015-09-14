@@ -28,6 +28,8 @@ public interface Car {
 
 	boolean isAutomatic();
 
+	boolean getAutomatic();
+
 	void setAutomatic(Boolean v);
 
 	String getPlateID();
@@ -36,6 +38,6 @@ public interface Car {
 
 	String[] getOwners();
 
-	void setOwners(String[] v);
+	Car withOwners(String[] v);
 
 }

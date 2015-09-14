@@ -239,36 +239,26 @@ public class NIBeansProcessor extends AbstractProcessor {
 			good = methodIsGood && good;
 		}
 		// If there are any partial properties, fail
-		if (info.fullProperties < info.properties.size()) {
-			tracker.addIssue("there are %s incomplete bean properties", info.properties.size() - info.fullProperties);
-			good = false;
+		for (Property property : info.properties.values()) {
+			if (property.getter == null && property.booleanGetter == null) {
+				tracker.addIssue("property %s has no getter", property.name);
+				good = false;
+			} else if (property.setter == null && property.chainSetter == null) {
+				tracker.addIssue("property %s has no setter", property.name);
+				good = false;
+			}
 		}
 		// Result
 		return good ? info : null;
 	}
 
 	private boolean processGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
-		// Getters should have no arguments
-		if (!methodElement.getParameters().isEmpty()) {
-			tracker.addIssue("unsupported getter signature");
-			return false;
+		Property property = processCommonGetter(propName, methodElement, info);
+		if (property != null) {
+			property.getter = methodElement;
+			return true;
 		}
-		// Match return type
-		TypeMirror propType = methodElement.getReturnType();
-		Property property = info.properties.get(propName);
-		if (property == null) {
-			property = addProperty(propName, propType, info);
-		} else if (property.getter != null) {
-			tracker.addIssue("conflict with already defined getter %s", property.getter);
-			return false;
-		} else if (processingEnv.getTypeUtils().isSameType(property.fieldType, propType)) {
-			++info.fullProperties;
-		} else {
-			tracker.addIssue("getter type %s isn't compatible with %s", methodElement, propType, property.fieldType);
-			return false;
-		}
-		property.getter = methodElement;
-		return true;
+		return false;
 	}
 
 	private boolean processIsGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
@@ -280,7 +270,30 @@ public class NIBeansProcessor extends AbstractProcessor {
 			tracker.addIssue("non-boolean return type %s", methodElement.getReturnType());
 			return false;
 		}
-		return processGetter(propName, methodElement, info);
+		Property property = processCommonGetter(propName, methodElement, info);
+		if (property != null) {
+			property.booleanGetter = methodElement;
+			return true;
+		}
+		return false;
+	}
+
+	private Property processCommonGetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
+		// Getters should have no arguments
+		if (!methodElement.getParameters().isEmpty()) {
+			tracker.addIssue("unsupported getter signature");
+			return null;
+		}
+		// Match return type
+		TypeMirror propType = methodElement.getReturnType();
+		Property property = info.properties.get(propName);
+		if (property == null) {
+			property = addProperty(propName, propType, info);
+		} else if (!isSameType(property.fieldType, propType)) {
+			tracker.addIssue("getter type %s isn't compatible with %s", methodElement, propType, property.fieldType);
+			return null;
+		}
+		return property;
 	}
 
 	private boolean processSetter(String propName, ExecutableElement methodElement, ImplClassInfo info) {
@@ -314,7 +327,6 @@ public class NIBeansProcessor extends AbstractProcessor {
 			tracker.addIssue("conflict with already defined setter %s", property.setter);
 			return false;
 		} else if (isSameType(property.fieldType, setterType)) {
-			++info.fullProperties;
 			boxFieldTypeIfNecessary(setterType, property);
 		} else {
 			tracker.addIssue("setter type %s isn't compatible with %s", setterType, property.fieldType);
@@ -489,7 +501,6 @@ public class NIBeansProcessor extends AbstractProcessor {
 		public final String clsName;
 		public Map<String, Property> properties = new TreeMap<>();
 		public final Collection<Property> propertyDefs = properties.values();
-		public int fullProperties = 0;
 		boolean invalid = false;
 
 		ImplClassInfo(TypeElement intfElement, TypeElement baseInterface) {
@@ -502,6 +513,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 	public static class Property {
 		public String name;
 		public ExecutableElement getter;
+		public ExecutableElement booleanGetter;
 		public ExecutableElement setter;
 		public TypeMirror setterType;
 		public boolean setterReturnsObject;
