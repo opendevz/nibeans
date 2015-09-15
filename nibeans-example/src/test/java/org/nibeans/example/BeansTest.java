@@ -118,6 +118,11 @@ public class BeansTest {
 		assertNull(BeanFactory.getInstance().createBean(GenericBeanA.class));
 	}
 
+	@Test
+	public void testTooShortMethodNames() {
+		assertNull(BeanFactory.getInstance().createBean(BadBeanA.class));
+	}
+
 	private static Person createPersonBean() {
 		Person person = BeanFactory.getInstance().createBean(Person.class);
 		person.setName(NAME);

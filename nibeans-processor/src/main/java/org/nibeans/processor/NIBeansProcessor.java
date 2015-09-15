@@ -487,9 +487,11 @@ public class NIBeansProcessor extends AbstractProcessor {
 	}
 
 	private static String getPropetyName(String name, String prefix) {
-		final char firstChar = name.charAt(prefix.length());
-		if (name.length() > prefix.length() && name.startsWith(prefix) && Character.isUpperCase(firstChar)) {
-			return Character.toLowerCase(firstChar) + name.substring(prefix.length() + 1);
+		if (name.length() > prefix.length() && name.startsWith(prefix)) {
+			final char firstChar = name.charAt(prefix.length());
+			if (Character.isUpperCase(firstChar)) {
+				return Character.toLowerCase(firstChar) + name.substring(prefix.length() + 1);
+			}
 		}
 		return null;
 	}
