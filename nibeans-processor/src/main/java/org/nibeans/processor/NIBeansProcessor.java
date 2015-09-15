@@ -16,11 +16,7 @@
 package org.nibeans.processor;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.lang.annotation.Annotation;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,15 +44,8 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
-import javax.tools.FileObject;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardLocation;
 
 import org.nibeans.NIBean;
-import org.nibeans.internal.BeanProviderService;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
-import org.stringtemplate.v4.STGroupFile;
 
 /**
  * Processes classes annotated with {@link org.nibeans.NIBean} and generated default implementations for them.
@@ -78,7 +67,6 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private static final String DEFAULT_TARGET_PACKAGE = ".beanimplementations";
 	private static final String DEFAULT_TARGET_CLASS = "BeanImplementations";
 	private static final Class<? extends Annotation> BEAN_CLASS = NIBean.class;
-	private static final Class<?> SERVICE_CLASS = BeanProviderService.class;
 	private static final Pattern NAME_PATTERN = Pattern.compile("^(\\w+(\\.\\w+)*)\\.(\\w+)$");
 
 	// Processor options
@@ -88,9 +76,9 @@ public class NIBeansProcessor extends AbstractProcessor {
 	private boolean isStrict;
 
 	// Working objects
-	private STGroup templateGroup;
 	private final Map<TypeElement, ImplClassInfo> processedInterfaces = new HashMap<>();
 	private IssueTracker tracker;
+	private Generator generator;
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -132,6 +120,7 @@ public class NIBeansProcessor extends AbstractProcessor {
 		}
 		// Other
 		tracker = new IssueTracker(processingEnv.getMessager(), isStrict);
+		generator = new Generator(processingEnv.getFiler());
 	}
 
 	@Override
@@ -435,26 +424,8 @@ public class NIBeansProcessor extends AbstractProcessor {
 				return qn1.compareTo(qn2);
 			}
 		});
-		// Generate the container class
-		ST tmpl = getTemplate();
-		tmpl.add("pkgName", targetPackage);
-		tmpl.add("containerClassName", targetClass);
-		tmpl.add("classes", validImpls);
-		// Write the target class file
-		JavaFileObject targetClassObj = processingEnv.getFiler().createSourceFile(targetPackage + "." + targetClass);
-		try (OutputStream output = targetClassObj.openOutputStream()) {
-			String contents = tmpl.render();
-			byte[] bytes = contents.getBytes(StandardCharsets.UTF_8);
-			output.write(bytes);
-		}
-		// Add the providers
-		FileObject res1 = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-				"META-INF/services/" + SERVICE_CLASS.getName());
-		try (OutputStream output = res1.openOutputStream()) {
-			PrintStream ps = new PrintStream(output);
-			ps.println(targetPackage + "." + targetClass + "$ProviderService");
-			ps.flush();
-		}
+		// Generate the results
+		generator.generate(targetPackage, targetClass, validImpls);
 		return false;
 	}
 
@@ -475,15 +446,6 @@ public class NIBeansProcessor extends AbstractProcessor {
 		// Done
 		implClassInfo.baseImpl = baseImpl;
 		return true;
-	}
-
-	private ST getTemplate() {
-		if (templateGroup == null) {
-			URL in = getClass().getResource("/template.txt");
-			templateGroup = new STGroupFile(in, StandardCharsets.UTF_8.name(), '<', '>');
-			templateGroup.load();
-		}
-		return templateGroup.getInstanceOf("impl_file");
 	}
 
 	private static String getPropetyName(String name, String prefix) {
