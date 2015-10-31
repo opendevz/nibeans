@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nibeans.example;
+package org.nibeans.example.beans;
 
-public interface BadBeanA {
+import org.nibeans.NIBean;
 
-	// This method's name is even shorter than some prefixes, should not fail
-	int xx();
+@NIBean
+public interface Person {
+
+	int getAge();
+
+	void setAge(int v);
+
+	String getName();
+
+	void setName(String v);
 
 }

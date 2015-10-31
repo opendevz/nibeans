@@ -48,11 +48,16 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -61,7 +66,25 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- use the processor while compiling its own test sources -->
+                        <id>process-test-annotations</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <compilerArgument>-proc:only</compilerArgument>
+                            <!-- processor arguments -->
+                            <compilerArgs>
+                                <arg>-Anib.srcpackages=org.nibeans.example.beans</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </execution>
+                </executions>
                 <configuration>
+                    <!-- avoid using the processor while compiling its own main sources -->
                     <compilerArgument>-proc:none</compilerArgument>
                 </configuration>
             </plugin>

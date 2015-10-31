@@ -23,6 +23,11 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.nibeans.BeanFactory;
+import org.nibeans.example.beans.BadBeanA;
+import org.nibeans.example.beans.Car;
+import org.nibeans.example.beans.GasolineCar;
+import org.nibeans.example.beans.GenericBeanA;
+import org.nibeans.example.beans.Person;
 
 public class BeansTest {
 

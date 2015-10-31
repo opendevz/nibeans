@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nibeans.example;
+package org.nibeans.example.beans;
 
-import org.nibeans.NIBean;
+public interface BadBeanA {
 
-@NIBean
-public interface GenericBeanB<T> {
-
-	int getAaa();
-
-	void setAaa(int t);
+	// This method's name is even shorter than some prefixes, should not fail
+	int xx();
 
 }

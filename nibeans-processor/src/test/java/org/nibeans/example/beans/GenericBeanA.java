@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nibeans.example;
+package org.nibeans.example.beans;
 
 import org.nibeans.NIBean;
 
 @NIBean
-public interface Person {
+public interface GenericBeanA {
 
-	int getAge();
+	<T> int getAaa();
 
-	void setAge(int v);
-
-	String getName();
-
-	void setName(String v);
+	<T> void setAaa(int t);
 
 }

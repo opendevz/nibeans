@@ -13,31 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.nibeans.example;
+package org.nibeans.example.beans;
 
 import org.nibeans.NIBean;
 
 @NIBean
-public interface Car {
+public interface GasolineCar extends Car {
 
-	String getMake();
+	int getOctaneLevel();
 
-	void setMake(String v);
-
-	Car withMake(String v);
-
-	boolean isAutomatic();
-
-	boolean getAutomatic();
-
-	void setAutomatic(Boolean v);
-
-	String getPlateID();
-
-	Car setPlateID(String v);
-
-	String[] getOwners();
-
-	Car withOwners(String[] v);
+	void setOctaneLevel(int v);
 
 }
