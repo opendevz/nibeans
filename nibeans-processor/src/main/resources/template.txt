@@ -87,6 +87,11 @@ public class <containerClassName> {
                 <implClass.propertyDefs:{prop|this.<prop.fieldName>};separator=",">\});
         \}
 
+        @Override
+        public String toString() {
+            return "BeanImpl[<implClass.intfElement.qualifiedName>]";
+        \}
+
         public static class Provider implements org.nibeans.internal.BeanProvider\<<implClass.intfElement.qualifiedName>\> {
             @Override
             public Class\<<implClass.intfElement.qualifiedName>\> getBeanInterface() {
